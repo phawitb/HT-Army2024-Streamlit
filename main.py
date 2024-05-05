@@ -22,7 +22,10 @@ st.write('Wellcome to HT-Army')
 
 id = st.text_input("Enter your ID", )
 
-df = pd.read_csv('data.csv')
+if not os.path.exists('data.csv'):
+    df = pd.DataFrame()
+else:
+    df = pd.read_csv('data.csv')
 
 # st.write(df)
 # st.write(df['id'].unique())

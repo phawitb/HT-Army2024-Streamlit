@@ -65,11 +65,10 @@ st.write("time", time)
 
 if id in get_all_id():
     if id and temperature:
-
-        try:
-            df = pd.read_csv('data.csv')
-        except:
+        if not os.path.exists('data.csv'):
             df = pd.DataFrame()
+        else:
+            df = pd.read_csv('data.csv')
 
 
         new_row = {'time': [time],
