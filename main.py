@@ -35,8 +35,8 @@ IDS = get_all_id()
 if id:
 
     # if id in df['id'].unique(): 
-    if id in IDS and df.columns.tolist(): 
-        if id in df['id'].unique():
+    if id in IDS:
+        if df.columns.tolist() and id in df['id'].unique(): 
             st.write('Last')
             df2 = df[df['id']==id]
             
