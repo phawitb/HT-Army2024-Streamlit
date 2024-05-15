@@ -1,112 +1,145 @@
+# pip install streamlit-echarts
+
+
 import streamlit as st
 import pandas as pd
-import streamlit as st
-# import hydralit_components as hc
 import requests
-import json
-import os
+import datetime
+from streamlit_echarts import st_echarts
 
-def get_all_id():
-    url = "https://raw.githubusercontent.com/phawitb/adjustHT4/main/config_htarmy2024.txt"
-    response = requests.get(url)
+st.set_page_config(layout="wide")
+
+def create_gaung(value,name,color):
+    option = {
+        "tooltip": {
+            "formatter": '{a} <br/>{b} : {c}%'
+        },
+        "series": [{
+            "name": '进度',
+            "type": 'gauge',
+            "startAngle": 180,
+            "endAngle": 0,
+            "progress": {
+                "show": "true"
+            },
+            "radius":'100%', 
+
+            "itemStyle": {
+                "color": color,
+                "shadowColor": 'rgba(0,138,255,0.45)',
+                "shadowBlur": 10,
+                "shadowOffsetX": 2,
+                "shadowOffsetY": 2,
+                "radius": '55%',
+            },
+            "progress": {
+                "show": "true",
+                "roundCap": "true",
+                "width": 15
+            },
+            "pointer": {
+                "length": '60%',
+                "width": 8,
+                "offsetCenter": [0, '5%']
+            },
+            "detail": {
+                "valueAnimation": "true",
+                "formatter": '{value}%',
+                "backgroundColor": color, #'#58D9F9',
+                "borderColor": '#999',
+                "borderWidth": 4,
+                "width": '60%',
+                "lineHeight": 20,
+                "height": 20,
+                "borderRadius": 188,
+                "offsetCenter": [0, '40%'],
+                "valueAnimation": "true",
+            },
+            "data": [{
+                "value": value,
+                "name": name
+            }]
+        }]
+    };
+
+    return option
+
+st.header('Welcome to HT-Army App!')
+
+url = "https://raw.githubusercontent.com/phawitb/HT-Army2024/main/config.txt"
+df = pd.read_csv(url,header=None)
+df.columns = ['id', 'adj_temp', 'adj_humid', 'adj_pm25', 'line1', 'line2', 'unit']
+user_input = st.text_input('#### Enter ID:')
+
+if user_input and user_input in list(df['id']):
+
+    df_id = df[df['id']==user_input]
+    st.write('#### Unit:', df_id['unit'].iloc[0])
+
+    with st.spinner('Wait for it...'):
+    
+        url = f"https://script.google.com/macros/s/AKfycbx1nHCA01C2U0NdpsnPdO0Oc5xEjLgfOZWIOwu1f0DX72OGHOHHBRdRqwZyNO-EENF1xg/exec?id={user_input}"
+        response = requests.get(url)
+
     if response.status_code == 200:
-        data = response.text
-        IDS = [x.split(',')[0] for x in data.split()]
-        return IDS
-    else:
-        # print("Failed to retrieve data. Status code:", response.status_code)
-        return None
+        try:
+            data = response.json()
+            isdata = True
+        except:
+            isdata = False
 
 
-st.write('Wellcome to HT-Army')
+        if isdata:
 
-id = st.text_input("Enter your ID", )
+            df_history = pd.DataFrame(data)
+            df_history['datetime'] = [datetime.datetime.fromtimestamp(x) for x in df_history['date']]
+            last_date = df_history[df_history['date'] == df_history['date'].max()]
 
-if not os.path.exists('data.csv'):
-    df = pd.DataFrame()
-else:
-    df = pd.read_csv('data.csv')
+            st.write(f"#### Lastseen {last_date['datetime'].iloc[0]}")
 
-# st.write(df)
-# st.write(df['id'].unique())
+            col1, col2, col3=st.columns([1,1,1])
+            with col1:
+                value,name,color = last_date['hic'].iloc[0],'Heat Index',last_date['flag'].iloc[0]
+                option = create_gaung(value,name,color)
+                st_echarts(options=option, key="1")
 
-IDS = get_all_id()
+            with col2:
+                
+                value,name,color = last_date['temp'].iloc[0],'Temperature',last_date['flag'].iloc[0]
+                option = create_gaung(value,name,color)
+                st_echarts(options=option, key="2")
 
-if id:
+            with col3:
+                
+                value,name,color = last_date['humid'].iloc[0],'Temperature','#58D9F9'
+                option = create_gaung(value,name,color)
+                st_echarts(options=option, key="3")
 
-    # if id in df['id'].unique(): 
-    if id in IDS:
-        if df.columns.tolist() and id in df['id'].unique(): 
-            st.write('Last')
-            df2 = df[df['id']==id]
+            st.write('### Historys')
+
+            df_history = df_history.drop(columns=['date'])
             
+            st.line_chart(
+            df_history, x="datetime", y=["temp", "humid"], color=["#FF0000", "#0000FF"]  # Optional
+            )
 
-            # chart_data = pd.DataFrame(np.random.randn(20, 3), columns=["a", "b", "c"])
-
-            df2.set_index('time', inplace=True)
-            df2.drop(columns=['id'], inplace=True)
-
-        
-            st.write(df2.iloc[-1])
-
-            
-            st.write('History')
-            st.write(df2)
-            st.line_chart(df2)
+            df_history.set_index('datetime', inplace=True)
+            st.write(df_history)
 
         else:
-            st.write('No history data!')
 
-        st.write('Setup')
-        
-        L = [None,None,None]
-        if not os.path.exists('config.json'):
-            config_data = {}
-            
-        else:
-            with open('config.json') as json_file:
-                config_data = json.load(json_file)
-
-            if id in config_data.keys():
-                for i in range(3):
-                    try:
-                        L[i] = config_data[id][f'line{i+1}']
-                    except:
-                        pass
-        
-        line1 = st.text_input("Enter line1 Token", L[0])
-        line2 = st.text_input("Enter line2 Token", L[1])
-        line3 = st.text_input("Enter line3 Token", L[2])
-
-        config_data[id] = {
-            'line1' : line1,
-            'line2' : line2,
-            'line3' : line3,
-        }
-
-        if st.button("update"):
-        
-            with open('config.json', 'w') as json_file:
-                json.dump(config_data, json_file)
-
-            # st.write('config_data:',config_data)
-            st.write('update complete!')
-
-        
-
-
-            
-
-
-
-
-        
-     
+            st.write('No history data')
 
     else:
-        st.write('id not exist!')
+        st.write(f"Failed to retrieve data: {response.status_code}")
 
+    
+    st.markdown("[Setting](https://ht-army2024-f4e56.web.app/)")
+        
 
 else:
-    st.write('please input ID')
+    st.write('user ID not exist!')
+        
+
+
 
