@@ -4,7 +4,7 @@
 import streamlit as st
 import pandas as pd
 import requests
-import datetime
+from datetime import datetime, timezone
 from streamlit_echarts import st_echarts
 import streamlit.components.v1 as components
 
@@ -90,6 +90,7 @@ with tab1:
         else:
             st.write('ID not exist')
 
+    isdata = False
     if user_id:
         with st.spinner('Wait for it...'):
             url = f"https://script.google.com/macros/s/AKfycbx1nHCA01C2U0NdpsnPdO0Oc5xEjLgfOZWIOwu1f0DX72OGHOHHBRdRqwZyNO-EENF1xg/exec?action=getDatas&id={user_id}"
@@ -116,7 +117,10 @@ with tab1:
             df_history['pm25'] = df_history['pm25'].astype(float)
 
 
-            df_history['datetime'] = [datetime.datetime.fromtimestamp(x) for x in df_history['date']]
+            # df_history['datetime'] = [datetime.datetime.fromtimestamp(x) for x in df_history['date']]
+            df_history['datetime'] = [datetime.fromtimestamp(x, timezone.utc) for x in df_history['date']]
+           
+
             last_date = df_history[df_history['date'] == df_history['date'].max()]
 
             st.write(f"#### Lastseen {last_date['datetime'].iloc[0]}")
@@ -143,14 +147,16 @@ with tab2:
     if user_id:
         st.write('### Historys')
 
-        df_history = df_history.drop(columns=['date'])
-        
-        st.line_chart(
-        df_history, x="datetime", y=["temp", "humid"], color=["#FF0000", "#0000FF"]  # Optional
-        )
+        if isdata:
 
-        df_history.set_index('datetime', inplace=True)
-        st.write(df_history)
+            df_history = df_history.drop(columns=['date'])
+            
+            st.line_chart(
+            df_history, x="datetime", y=["temp", "humid"], color=["#FF0000", "#0000FF"]  # Optional
+            )
+
+            df_history.set_index('datetime', inplace=True)
+            st.write(df_history)
 
         
         
