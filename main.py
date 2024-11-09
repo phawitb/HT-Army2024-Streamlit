@@ -180,7 +180,8 @@ with tab3:
         new_config_data['adj_pm'] = st.number_input('Adust PM2.5 error', value=config_data['adj_pm'])
         new_config_data['line1'] = st.text_input('#####  line1:',config_data['line1'])
         new_config_data['line2'] = st.text_input('#####  line2:',config_data['line2'])
-        new_config_data['line3'] = st.text_input('#####  line3:',config_data['line3'])
+        # new_config_data['line3'] = st.text_input('#####  line3:',config_data['line3'])
+        new_config_data['line3'] = ""
 
         # st.write(new_config_data)
 
